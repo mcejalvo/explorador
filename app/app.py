@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 # Load CSV data
-df = pd.read_csv('data.csv')
+df = pd.read_csv('data/data.csv')
 
 # Sidebar filters
 name_filter = st.sidebar.multiselect('Filter by Name', options=df['name'].unique())

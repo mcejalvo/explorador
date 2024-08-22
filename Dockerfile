@@ -4,11 +4,14 @@ FROM python:3.9-slim
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+# Copy the requirements file first, for better caching
+COPY requirements.txt /app/
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the entire project directory into the container
+COPY . /app
 
 # Make port 8501 available to the world outside this container
 EXPOSE 8501
