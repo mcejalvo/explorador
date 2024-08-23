@@ -1,17 +1,37 @@
 import streamlit as st
 import pandas as pd
 
-
 st.set_page_config(layout="wide")
+
+ANAITERRA_COLOR = "#E44445"
+MAX_ROWS = 20
 
 # Load CSV data
 df = pd.read_csv('data/data.csv')
 
+st.title("Explorador _:red[de] vergüenzas_ 👺 😳")
+st.write("_aka_ el shameador de Winnie 🐼")
+
+st.markdown(
+    f"""
+    <hr style="border:2px solid {ANAITERRA_COLOR}">
+    """,
+    unsafe_allow_html=True
+) 
+
 # Sidebar filters
-name_filter = st.sidebar.multiselect('Filter by Name', options=df['name'].unique())
-channel_filter = st.sidebar.multiselect('Filter by Channel Name', options=df['channel_name'].unique())
-thread_filter = st.sidebar.multiselect('Filter by Thread Name', options=df['thread_name'].unique())
-message_filter = st.sidebar.text_input('Filter by Message Contains')
+
+st.sidebar.image("images/anaiterra_logo_no_background.png", width=150) 
+st.sidebar.header("Filtros")
+
+name_filter = st.sidebar.multiselect('Personita(s)', options=df['name'].unique())
+channel_filter = st.sidebar.multiselect('Canal(es)', options=df['channel_name'].unique())
+thread_filter = st.sidebar.multiselect('Hilo(s)', options=df['thread_name'].unique())
+message_filter = st.sidebar.text_input('Mensaje contiene')
+
+# Create two columns
+col1, col2 = st.columns([1,4])
+
 
 # Apply filters
 filtered_df = df[
@@ -21,14 +41,25 @@ filtered_df = df[
     (df['message'].str.contains(message_filter, case=False, na=False) if message_filter else pd.Series([True] * len(df)))
 ]
 
-# Display filtered data
-st.write(filtered_df)
 
-# Group By functionality
-st.sidebar.markdown("### Group By Options")
-group_by_columns = st.sidebar.multiselect('Select columns to group by', options=df.columns.tolist())
+with col1:
 
-if group_by_columns:
-    grouped_df = filtered_df.groupby(group_by_columns).size().reset_index(name='count')
-    st.write("### Grouped Data")
-    st.write(grouped_df.sort_values(by="count", ascending=False))
+    # Group By functionality
+    group_by_columns = st.sidebar.multiselect('Agrupar por', options=df.columns.tolist())
+    st.write("### # Total de Mensajes")
+    st.write("(elige al menos un campo para agrupar)")
+
+
+    if group_by_columns:
+        grouped_df = filtered_df.groupby(group_by_columns).size().reset_index(name='count')
+        st.write(grouped_df.sort_values(by="count", ascending=False))
+
+
+with col2:
+
+    # Display filtered data
+    st.write(f"### Mensajes \n _solo visibles los primeros {MAX_ROWS} mensajes_")
+    columns_to_show = ["🔗", "name", "channel_name", "thread_name", "message"]
+    # st.write(filtered_df.head(500))
+    st.write(filtered_df.head(MAX_ROWS).reset_index()[columns_to_show].to_html(escape=False), unsafe_allow_html=True)
+
