@@ -59,9 +59,8 @@ with col1:
 
 with col2:
 
-    max_rows = st.number_input(f"Mensajes a mostrar (max {MAX_ROWS})", min_value=20, max_value=MAX_ROWS, value=20)
+    # max_rows = st.number_input(f"Mensajes a mostrar (max {MAX_ROWS})", min_value=20, max_value=MAX_ROWS, value=20)
 
     # Display filtered data
-    # st.write(filtered_df.head(500))
-    st.write(filtered_df.head(max_rows).reset_index()[columns_to_show].to_html(escape=False), unsafe_allow_html=True)
+    st.write(filtered_df.reset_index()[columns_to_show].to_html(escape=False), unsafe_allow_html=True)
 
