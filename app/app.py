@@ -4,7 +4,7 @@ import pandas as pd
 st.set_page_config(layout="wide")
 
 ANAITERRA_COLOR = "#E44445"
-MAX_ROWS = 20
+MAX_ROWS = 500
 
 # Load CSV data
 df = pd.read_csv('data/data.csv')
