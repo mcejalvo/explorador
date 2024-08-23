@@ -5,7 +5,7 @@ st.set_page_config(layout="wide")
 
 ANAITERRA_COLOR = "#E44445"
 MAX_ROWS = 1000
-columns_to_show = ["🔗", "name", "channel_name", "thread_name", "message"]
+columns_to_show = ["name", "channel_name", "thread_name", "message","message_link"]
 columns_to_group = ["name", "channel_name", "thread_name"]
 
 # Load CSV data
@@ -59,8 +59,9 @@ with col1:
 
 with col2:
 
-    # max_rows = st.number_input(f"Mensajes a mostrar (max {MAX_ROWS})", min_value=20, max_value=MAX_ROWS, value=20)
 
     # Display filtered data
-    st.write(filtered_df.reset_index()[columns_to_show].to_html(escape=False), unsafe_allow_html=True)
+    df = filtered_df.reset_index()[columns_to_show]
+
+    st.dataframe(df)
 
