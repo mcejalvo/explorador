@@ -4,7 +4,9 @@ import pandas as pd
 st.set_page_config(layout="wide")
 
 ANAITERRA_COLOR = "#E44445"
-MAX_ROWS = 500
+MAX_ROWS = 1000
+columns_to_show = ["🔗", "name", "channel_name", "thread_name", "message"]
+columns_to_group = ["name", "channel_name", "thread_name"]
 
 # Load CSV data
 df = pd.read_csv('data/data.csv')
@@ -30,7 +32,7 @@ thread_filter = st.sidebar.multiselect('Hilo(s)', options=df['thread_name'].uniq
 message_filter = st.sidebar.text_input('Mensaje contiene')
 
 # Create two columns
-col1, col2 = st.columns([1,4])
+col1, col2 = st.columns([2,5])
 
 
 # Apply filters
@@ -45,7 +47,7 @@ filtered_df = df[
 with col1:
 
     # Group By functionality
-    group_by_columns = st.sidebar.multiselect('Agrupar por', options=df.columns.tolist())
+    group_by_columns = st.sidebar.multiselect('Agrupar por', options=df[columns_to_group].columns.tolist())
     st.write("### # Total de Mensajes")
     st.write("(elige al menos un campo para agrupar)")
 
@@ -57,9 +59,9 @@ with col1:
 
 with col2:
 
+    max_rows = st.number_input(f"Mensajes a mostrar (max {MAX_ROWS})", min_value=20, max_value=MAX_ROWS, value=20)
+
     # Display filtered data
-    st.write(f"### Mensajes \n _solo visibles los primeros {MAX_ROWS} mensajes_")
-    columns_to_show = ["🔗", "name", "channel_name", "thread_name", "message"]
     # st.write(filtered_df.head(500))
-    st.write(filtered_df.head(MAX_ROWS).reset_index()[columns_to_show].to_html(escape=False), unsafe_allow_html=True)
+    st.write(filtered_df.head(max_rows).reset_index()[columns_to_show].to_html(escape=False), unsafe_allow_html=True)
 
