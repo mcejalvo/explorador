@@ -10,6 +10,6 @@ jobs:
      - uses: actions/checkout@v4
      - name: Build and push the image
        run: |
-         docker login --username outerwinnie --password ${{ secrets.GH_PAT }} ghcr.io
-         docker build . --tag ghcr.io/outerwinnie/discord-search:latest
-         docker push ghcr.io/outerwinnie/discord-search:latest
+         docker login --username mcejalvo --password ${{ secrets.GH_PAT }} ghcr.io
+         docker build . --tag ghcr.io/mcejalvo/discord-search:latest
+         docker push ghcr.io/mcejalvo/discord-search:latest
