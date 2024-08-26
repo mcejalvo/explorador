@@ -40,7 +40,7 @@ filtered_df = df[
     (df['name'].isin(name_filter) if name_filter else pd.Series([True] * len(df))) &
     (df['channel_name'].isin(channel_filter) if channel_filter else pd.Series([True] * len(df))) &
     (df['thread_name'].isin(thread_filter) if thread_filter else pd.Series([True] * len(df))) &
-    (df['message'].str.contains(message_filter, case=False, na=False) if message_filter else pd.Series([True] * len(df)))
+    (df['message'].str.contains(rf'\b{message_filter}\b', case=False, na=False) if message_filter else pd.Series([True] * len(df)))
 ]
 
 
