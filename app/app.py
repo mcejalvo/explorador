@@ -1,7 +1,12 @@
 import streamlit as st
 import pandas as pd
+import os 
 
-st.set_page_config(layout="wide")
+st.set_page_config(
+    layout="wide",
+    page_title = os.getenv("TAB_TITLE", "Discord Search")  
+
+    )
 
 ANAITERRA_COLOR = "#E44445"
 MAX_ROWS = 1000
