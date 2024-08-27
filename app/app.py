@@ -3,9 +3,10 @@ import pandas as pd
 from datetime import datetime, timedelta
 import os
 
+app_title = os.getenv("TAB_TITLE", "Discord Search")
 st.set_page_config(
     layout="wide",
-    page_title=os.getenv("TAB_TITLE", "Discord Search")
+    page_title=app_title
 )
 
 # Load CSV data
@@ -16,16 +17,13 @@ df['formatted_date'] = pd.to_datetime(df['timestamp'], format='ISO8601').dt.strf
 
 # Calculate default date range (last year)
 end_date_default = datetime.today()
-start_date_default = end_date_default - timedelta(days=365)
+start_date_default = datetime(2020, 1, 1)
 
-st.markdown("""
+st.markdown(f"""
     <h1 style='text-align: center; font-size: 48px; background: -webkit-linear-gradient(#7289DA, #5865F2); -webkit-background-clip: text; color: transparent;'>
-        🌈 My Gradient Title 🌈
+         {app_title} 👾
     </h1>
 """, unsafe_allow_html=True)
-
-
-
 
 # Define tabs/pages
 tab1, tab2 = st.tabs(["Mensajes", "Imágenes"])
@@ -76,9 +74,28 @@ with tab1:
         filtered_df = filtered_df[filtered_df['message'].str.contains(rf'\b{message_filter}\b', case=False, na=False)]
 
     # Display filtered data
+    st.subheader("Filtered Messages")
     columns_to_show = ["formatted_date", "name", "channel_name", "thread_name", "message", "message_link"]
     df_to_display = filtered_df.reset_index()[columns_to_show]
     st.dataframe(df_to_display)
+
+    # Group By Section
+    st.markdown("<hr style='border:2px solid #E44445;'>", unsafe_allow_html=True)
+    st.subheader("Recuento")
+
+    # Group By Filters
+    group_by_columns = st.multiselect(
+        "Agrupar por",
+        options=["name", "channel_name", "thread_name"],
+        key="group_by_columns"
+    )
+
+    # Display Grouped Data
+    if group_by_columns:
+        grouped_df = filtered_df.groupby(group_by_columns).size().reset_index(name='count').sort_values(by="count", ascending=False)
+        st.dataframe(grouped_df)
+    else:
+        st.write("Please select at least one field to group by.")
 
 # Image Gallery Page
 with tab2:
