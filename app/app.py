@@ -74,7 +74,7 @@ with tab1:
         filtered_df = filtered_df[filtered_df['message'].str.contains(rf'\b{message_filter}\b', case=False, na=False)]
 
     # Display filtered data
-    st.subheader("Filtered Messages")
+    st.subheader("Lista de mensajes")
     columns_to_show = ["formatted_date", "name", "channel_name", "thread_name", "message", "message_link"]
     df_to_display = filtered_df.reset_index()[columns_to_show]
     st.dataframe(df_to_display)
