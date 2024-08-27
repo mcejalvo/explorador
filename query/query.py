@@ -2,6 +2,9 @@ import discord
 import asyncio
 import pandas as pd
 import threading
+import os
+from datetime import datetime, timezone
+import shutil
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -12,13 +15,27 @@ if not TOKEN:
     raise ValueError("Discord token not found")
 
 messages = []
-# List of users to filter
-user_list = pd.read_csv("query/users.csv")
+user_list = list(pd.read_csv("query/users.csv")["user"])
+DATA_FILE = "data/data.csv"
+DATA_FILE_COPY = "data/data-copy.csv"
+
+# Set your start date (only fetch messages after this date)
+if os.path.exists(DATA_FILE):
+    existing_data = pd.read_csv(DATA_FILE)
+    # Convert the 'timestamp' column to datetime
+    existing_data['timestamp'] = pd.to_datetime(existing_data['timestamp'])
+    # Find the latest timestamp
+    last_message_time = existing_data['timestamp'].max()
+else:
+    last_message_time = datetime(2021, 1, 1, tzinfo=timezone.utc)
+
+start_date = last_message_time
+# start_date = datetime(2024, 8, 20, tzinfo=timezone.utc) # to test
 
 class MyBot(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(**kwargs, intents=intents)
-        
+
     async def on_ready(self):
         print(f'Logged in as {self.user}')
         await self.extract_messages_from_all_guilds()
@@ -34,7 +51,7 @@ class MyBot(discord.Client):
                 print(f"Fetching messages from channel: {channel.name}")
                 
                 try:
-                    async for message in channel.history(limit=None):
+                    async for message in channel.history(limit=None, after=start_date):
                         if message.author.name in user_list:
                             has_image = "no"
                             image_url = None
@@ -47,7 +64,7 @@ class MyBot(discord.Client):
                     
                     for thread in channel.threads:
                         print(f"Fetching messages from thread: {thread.name}")
-                        async for message in thread.history(limit=None):
+                        async for message in thread.history(limit=None, after=start_date):
                             if message.author.name in user_list:
                                 has_image = "no"
                                 image_url = None
@@ -76,13 +93,20 @@ def get_discord_data():
     thread.start()
     thread.join()  # Wait for the thread to finish
 
-    df = pd.DataFrame(messages, columns=["name", "message", "timestamp", "channel_name", "thread_name", "message_link", "has_image", "image_url"])
-    df["date"] = pd.to_datetime(df["timestamp"]).dt.date
-    df["hour"] = pd.to_datetime(df["timestamp"]).dt.hour
+    new_data  = pd.DataFrame(messages, columns=["name", "message", "timestamp", "channel_name", "thread_name", "message_link", "has_image", "image_url"])
+    new_data["date"] = pd.to_datetime(df["timestamp"]).dt.date
+    new_data["hour"] = pd.to_datetime(df["timestamp"]).dt.hour
     
     return df
 
-# Example usage
+# Backup the existing data.csv to data-copy.csv
+if os.path.exists(DATA_FILE):
+    shutil.copyfile(DATA_FILE, DATA_FILE_COPY)
+
 df = get_discord_data()
 
-df.to_csv("data/data1.csv", index=False, quoting=0)
+# Append new data to the existing CSV
+if os.path.exists(DATA_FILE):
+    new_data.to_csv(DATA_FILE, mode='a', header=False, index=False, quoting=0)
+else:
+    new_data.to_csv(DATA_FILE, index=False, quoting=0)
