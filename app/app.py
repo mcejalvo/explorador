@@ -5,16 +5,18 @@ import os
 st.set_page_config(
     layout="wide",
     page_title = os.getenv("TAB_TITLE", "Discord Search")  
-
-    )
+)
 
 ANAITERRA_COLOR = "#E44445"
 MAX_ROWS = 1000
-columns_to_show = ["name", "channel_name", "thread_name", "message","message_link"]
+columns_to_show = ["date", "name", "channel_name", "thread_name", "message", "message_link"]
 columns_to_group = ["name", "channel_name", "thread_name"]
 
 # Load CSV data
 df = pd.read_csv('data/data.csv')
+
+# Convert timestamp to a readable date format and add it as a new column
+df['date'] = pd.to_datetime(df['timestamp'], format='ISO8601').dt.strftime('%d/%m/%Y %H:%M')
 
 st.title("Explorador _:red[de] vergüenzas_ 👺 😳")
 st.write("_aka_ el shameador de Winnie 🐼")
@@ -39,7 +41,6 @@ message_filter = st.sidebar.text_input('Mensaje contiene')
 # Create two columns
 col1, col2 = st.columns([2,5])
 
-
 # Apply filters
 filtered_df = df[
     (df['name'].isin(name_filter) if name_filter else pd.Series([True] * len(df))) &
@@ -48,25 +49,17 @@ filtered_df = df[
     (df['message'].str.contains(rf'\b{message_filter}\b', case=False, na=False) if message_filter else pd.Series([True] * len(df)))
 ]
 
-
 with col1:
-
     # Group By functionality
     group_by_columns = st.sidebar.multiselect('Agrupar por', options=df[columns_to_group].columns.tolist())
     st.write("### # Total de Mensajes")
     st.write("(elige al menos un campo para agrupar)")
 
-
     if group_by_columns:
         grouped_df = filtered_df.groupby(group_by_columns).size().reset_index(name='count')
         st.write(grouped_df.sort_values(by="count", ascending=False))
 
-
 with col2:
-
-
     # Display filtered data
-    df = filtered_df.reset_index()[columns_to_show]
-
-    st.dataframe(df)
-
+    df_to_display = filtered_df.reset_index()[columns_to_show]
+    st.dataframe(df_to_display)
