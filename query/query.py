@@ -93,20 +93,20 @@ def get_discord_data():
     thread.start()
     thread.join()  # Wait for the thread to finish
 
-    new_data  = pd.DataFrame(messages, columns=["name", "message", "timestamp", "channel_name", "thread_name", "message_link", "has_image", "image_url"])
-    new_data["date"] = pd.to_datetime(df["timestamp"]).dt.date
-    new_data["hour"] = pd.to_datetime(df["timestamp"]).dt.hour
+    new_data = pd.DataFrame(messages, columns=["name", "message", "timestamp", "channel_name", "thread_name", "message_link", "has_image", "image_url"])
+    new_data["date"] = pd.to_datetime(new_data["timestamp"]).dt.date
+    new_data["hour"] = pd.to_datetime(new_data["timestamp"]).dt.hour
     
-    return df
+    return new_data
 
 # Backup the existing data.csv to data-copy.csv
 if os.path.exists(DATA_FILE):
     shutil.copyfile(DATA_FILE, DATA_FILE_COPY)
 
-df = get_discord_data()
+new_data = get_discord_data()
 
 # Append new data to the existing CSV
 if os.path.exists(DATA_FILE):
     new_data.to_csv(DATA_FILE, mode='a', header=False, index=False, quoting=0)
 else:
-    new_data.to_csv(DATA_FILE, index=False, quoting=0)
+    new_datadf.to_csv(DATA_FILE, index=False, quoting=0)
