@@ -97,7 +97,7 @@ def get_discord_data():
     new_data["date"] = pd.to_datetime(new_data["timestamp"]).dt.date
     new_data["hour"] = pd.to_datetime(new_data["timestamp"]).dt.hour
     
-    return new_data
+    return new_data.sort_values(by="timestamp", ascending=False)
 
 # Backup the existing data.csv to data-copy.csv
 if os.path.exists(DATA_FILE):
@@ -109,4 +109,4 @@ new_data = get_discord_data()
 if os.path.exists(DATA_FILE):
     new_data.to_csv(DATA_FILE, mode='a', header=False, index=False, quoting=0)
 else:
-    new_datadf.to_csv(DATA_FILE, index=False, quoting=0)
+    new_data.to_csv(DATA_FILE, index=False, quoting=0)
