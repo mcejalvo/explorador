@@ -108,7 +108,7 @@ with tab2:
     with col1:
         date_range = st.date_input(
             "Desde", 
-            value=[datetime(2024,1,1), end_date_default], 
+            value=[start_date_default, end_date_default], 
             key="gallery_date_range"
         )
         if isinstance(date_range, list) and len(date_range) == 2:
@@ -169,7 +169,9 @@ with tab2:
 
     # Display only the current batch of images in the selected number of columns
     current_images = image_df.head(st.session_state.image_offset)
-    st.write(f"Displaying {len(current_images)} images")
+    total_images = len(image_df)
+    st.write(f"Mostrando {len(current_images)} imágenes de un total de {total_images}")
+
 
     if num_columns == 1:
         for idx, row in current_images.iterrows():
