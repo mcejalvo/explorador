@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 import os
+import numpy as np
 
 app_title = os.getenv("TAB_TITLE", "Discord Search")
 st.set_page_config(
@@ -126,8 +127,8 @@ with tab2:
             if user_filter:
                 image_df = image_df[image_df['name'].isin(user_filter)]
 
-        # Second row: Canal, Hilos
-        col3, col4 = st.columns(2)
+        # Second row: Canal, Hilos, Excluir canales/hilos
+        col3, col4, col5 = st.columns(3)
 
         with col3:
             channel_filter = st.multiselect('Canal(es)', options=image_df['channel_name'].unique(), key="gallery_channel_filter")
@@ -139,22 +140,28 @@ with tab2:
             if thread_filter:
                 image_df = image_df[image_df['thread_name'].isin(thread_filter)]
 
+        with col5:
+            exclude_filter = st.multiselect('Excluir canales/hilos', options=list(image_df['channel_name'].unique()) + list(image_df['thread_name'].unique()), key="gallery_exclude_filter", default=["memitos-y-animalitos🤡"])
+            if exclude_filter:
+                image_df = image_df[~image_df['channel_name'].isin(exclude_filter)]
+                image_df = image_df[~image_df['thread_name'].isin(exclude_filter)]
+
         # Fourth row: Number of columns (buttons)
         st.markdown("<hr style='border:2px solid #E44445;'>", unsafe_allow_html=True)
-        col5 = st.columns(10)
-        with col5[-1]:
+        col6 = st.columns(10)
+        with col6[-1]:
             if st.button("Grande"):
                 num_columns = 1
-        with col5[-2]:
+        with col6[-2]:
             if st.button("Mediano"):
                 num_columns = 2
-        with col5[-3]:
+        with col6[-3]:
             if st.button("Pequeño"):
                 num_columns = 3
 
         # Ensure num_columns has a default value
         if 'num_columns' not in locals():
-            num_columns = 2
+            num_columns = 3
 
         # Filter to only rows with images
         image_df = image_df[image_df['has_image'] == 'yes']
