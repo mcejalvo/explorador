@@ -42,6 +42,7 @@ with col2:
                 # Reload the data after updating
                 df = open_file("data/data.csv")
                 df['timestamp'] = pd.to_datetime(df['timestamp'], format="mixed", errors='coerce')
+                df['formatted_date'] = df['timestamp'].dt.tz_convert('Europe/Madrid').dt.strftime('%d/%m/%Y %H:%M')
                 df['date'] = df['timestamp'].dt.date  # Re-create the 'date' column
                 last_timestamp = df['timestamp'].max()
             except subprocess.CalledProcessError as e:
