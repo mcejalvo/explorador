@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import os
 import numpy as np
+from filemanager import open_file
 
 app_title = os.getenv("TAB_TITLE", "Discord Search")
 st.set_page_config(
@@ -11,7 +12,7 @@ st.set_page_config(
 )
 
 # Load CSV data
-df = pd.read_csv('data/data.csv')
+df = open_file("data/data.csv")
 
 # Convert timestamp to a readable date format and add it as a new column
 df['formatted_date'] = pd.to_datetime(df['timestamp'], format='ISO8601').dt.strftime('%d/%m/%Y %H:%M')
