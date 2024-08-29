@@ -1,31 +1,61 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+import subprocess
 import os
-import numpy as np
+from datetime import datetime, timedelta
 from filemanager import open_file
 
+# Set the app title from environment or use default
 app_title = os.getenv("TAB_TITLE", "Discord Search")
-st.set_page_config(
-    layout="wide",
-    page_title=app_title
-)
+st.set_page_config(layout="wide", page_title=app_title)
 
 # Load CSV data
 df = open_file("data/data.csv")
 
-# Convert timestamp to a readable date format and add it as a new column
-df['formatted_date'] = pd.to_datetime(df['timestamp'], format='ISO8601').dt.strftime('%d/%m/%Y %H:%M')
+# Get the last timestamp from the data
+last_timestamp = df['timestamp'].max()
 
-# Calculate default date range (last year)
-end_date_default = datetime.today()
-start_date_default = datetime(2020, 1, 1)
-
+    
+# Display the title with custom HTML styling
 st.markdown(f"""
     <h1 style='text-align: center; font-size: 48px; background: -webkit-linear-gradient(#7289DA, #5865F2); -webkit-background-clip: text; color: transparent;'>
          {app_title} 👾
     </h1>
 """, unsafe_allow_html=True)
+
+
+col1, col2 = st.columns([8, 1])
+
+# Add "Actualizar" button
+with col2:
+    if st.button("Actualizar"):
+        with st.spinner('Actualizando datos...'):
+            try:
+                # Run query.py to update the data
+                result = subprocess.run(["python", "query/query.py"], check=True)
+                st.success("Datos actualizados correctamente.")
+                # Reload the data after updating
+                df = open_file("data/data.csv")
+                last_timestamp = df['timestamp'].max()
+            except subprocess.CalledProcessError as e:
+                st.error(f"Error al actualizar los datos: {e}")
+
+# Layout: Button and last updated timestamp
+col1, col2 = st.columns([5, 1])
+
+with col2:
+    # Display the last updated timestamp
+    st.write(f"Última actualización: {pd.to_datetime(last_timestamp).strftime('%d/%m/%Y %H:%M')}")
+
+
+# Convert to Europe/Madrid timezone, handling the timezone conversion
+df['formatted_date'] = df['timestamp'].str[:16]
+
+
+# Calculate default date range (last year)
+end_date_default = datetime.today()
+start_date_default = datetime(2020, 1, 1)
+
 
 # Define tabs/pages
 tab1, tab2 = st.tabs(["Mensajes", "Imágenes"])
@@ -77,7 +107,7 @@ with tab1:
 
     # Display filtered data
     st.subheader("Lista de mensajes")
-    columns_to_show = ["formatted_date", "name", "channel_name", "thread_name", "message", "message_link"]
+    columns_to_show = ["formatted_date", "timestamp", "name", "channel_name", "thread_name", "message", "message_link"]
     df_to_display = filtered_df.reset_index()[columns_to_show]
     st.dataframe(df_to_display)
 
