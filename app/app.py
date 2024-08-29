@@ -12,17 +12,22 @@ st.set_page_config(layout="wide", page_title=app_title)
 # Load CSV data
 df = open_file("data/data.csv")
 
+# Ensure the 'timestamp' column is in datetime format
+df['timestamp'] = pd.to_datetime(df['timestamp'], format="mixed", errors='coerce')
+df['formatted_date'] = df['timestamp'].dt.tz_convert('Europe/Madrid').dt.strftime('%d/%m/%Y %H:%M')
+
+# Create a new 'date' column containing only the date part (no time, no timezone)
+df['date'] = df['timestamp'].dt.date
+
 # Get the last timestamp from the data
 last_timestamp = df['timestamp'].max()
 
-    
 # Display the title with custom HTML styling
 st.markdown(f"""
     <h1 style='text-align: center; font-size: 48px; background: -webkit-linear-gradient(#7289DA, #5865F2); -webkit-background-clip: text; color: transparent;'>
          {app_title} 👾
     </h1>
 """, unsafe_allow_html=True)
-
 
 col1, col2 = st.columns([8, 1])
 
@@ -36,6 +41,8 @@ with col2:
                 st.success("Datos actualizados correctamente.")
                 # Reload the data after updating
                 df = open_file("data/data.csv")
+                df['timestamp'] = pd.to_datetime(df['timestamp'], format="mixed", errors='coerce')
+                df['date'] = df['timestamp'].dt.date  # Re-create the 'date' column
                 last_timestamp = df['timestamp'].max()
             except subprocess.CalledProcessError as e:
                 st.error(f"Error al actualizar los datos: {e}")
@@ -47,15 +54,9 @@ with col2:
     # Display the last updated timestamp
     st.write(f"Última actualización: {pd.to_datetime(last_timestamp, format='mixed').strftime('%d/%m/%Y %H:%M')}")
 
-
-# Convert to Europe/Madrid timezone, handling the timezone conversion
-df['formatted_date'] = pd.to_datetime(df['timestamp'], format="mixed").dt.tz_convert('Europe/Madrid')
-df['formatted_date'] = df['formatted_date'].dt.strftime('%d/%m/%Y %H:%M')
-
-# Calculate default date range (last year)
-end_date_default = datetime.today()
-start_date_default = datetime(2020, 1, 1)
-
+# Calculate default date range
+end_date_default = datetime.today().date()
+start_date_default = datetime(2020, 1, 1).date()
 
 # Define tabs/pages
 tab1, tab2 = st.tabs(["Mensajes", "Imágenes"])
@@ -74,13 +75,10 @@ with tab1:
             value=[start_date_default, end_date_default], 
             key="message_date_range"
         )
-        if isinstance(date_range, list) and len(date_range) == 2:
-            start_date, end_date = pd.to_datetime(date_range)
-            filtered_df = df[(df['timestamp'] >= start_date) & (df['timestamp'] <= end_date)]
-        elif isinstance(date_range, pd.Timestamp):
-            filtered_df = df[df['timestamp'] >= pd.to_datetime(date_range)]
-        else:
-            filtered_df = df.copy()
+        
+        # Apply the date range filter directly
+        start_date, end_date = date_range
+        filtered_df = df[(df['date'] >= start_date) & (df['date'] <= end_date)]
 
     with col2:
         name_filter = st.multiselect('Personita(s)', options=filtered_df['name'].unique(), key="explorer_name_filter")
@@ -142,13 +140,11 @@ with tab2:
             value=[start_date_default, end_date_default], 
             key="gallery_date_range"
         )
-        if isinstance(date_range, list) and len(date_range) == 2:
-            start_date, end_date = pd.to_datetime(date_range)
-            image_df = df[(df['timestamp'] >= start_date) & (df['timestamp'] <= end_date)]
-        elif isinstance(date_range, pd.Timestamp):
-            image_df = df[df['timestamp'] >= pd.to_datetime(date_range)]
-        else:
-            image_df = df.copy()
+        
+        # Apply the date range filter directly
+        start_date, end_date = date_range
+        image_df = df[(df['date'] >= start_date) & (df['date'] <= end_date)]
+
 
     with col2:
         user_filter = st.multiselect('Personita(s)', options=image_df['name'].unique(), key="gallery_user_filter")
@@ -169,7 +165,7 @@ with tab2:
             image_df = image_df[image_df['thread_name'].isin(thread_filter)]
 
     with col5:
-        exclude_filter = st.multiselect('Excluir canales/hilos', options=list(image_df['channel_name'].unique()) + list(image_df['thread_name'].unique()), key="gallery_exclude_filter", default=["memitos-y-animalitos🤡"])
+        exclude_filter = st.multiselect('Excluir canales/hilos', options=list(image_df['channel_name'].unique()) + list(image_df['thread_name'].unique()), key="gallery_exclude_filter")
         if exclude_filter:
             image_df = image_df[~image_df['channel_name'].isin(exclude_filter)]
             image_df = image_df[~image_df['thread_name'].isin(exclude_filter)]
@@ -203,7 +199,6 @@ with tab2:
     total_images = len(image_df)
     st.write(f"Mostrando {len(current_images)} imágenes de un total de {total_images}")
 
-
     if num_columns == 1:
         for idx, row in current_images.iterrows():
             st.image(row['image_url'], caption=f"{row['name']} - {row['formatted_date']} - {row['channel_name']}", use_column_width=True)
@@ -220,7 +215,3 @@ with tab2:
             # Increase the image offset by 20, but don't exceed the number of available images
             st.session_state.image_offset = min(st.session_state.image_offset + 20, len(image_df))
             st.session_state["force_rerun"] = not st.session_state.get("force_rerun", False)  # Toggle a dummy variable to force rerun
-
-# To ensure the tab is loaded only when active, track tab state in session
-if st.session_state.get("active_tab") != "Imágenes" and tab2:
-    st.session_state["active_tab"] = "Imágenes"
