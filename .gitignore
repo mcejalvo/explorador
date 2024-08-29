@@ -167,3 +167,4 @@ cython_debug/
 #.idea/
 docker-images/.stfolder/syncthing-folder-e3b935.txt
 docker-images/explorador-app.tar
+proto.py
