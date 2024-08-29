@@ -9,6 +9,7 @@ __pycache__/
 *.csv
 !data.csv
 !users.csv
+!data-copy.csv
 
 # Distribution / packaging
 .Python
