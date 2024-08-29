@@ -2,5 +2,4 @@ discord
 asyncio
 pandas
 streamlit
-shutil
 cryptography
