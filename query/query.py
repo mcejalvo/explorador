@@ -5,6 +5,13 @@ import threading
 import os
 from datetime import datetime, timezone
 import shutil
+import sys
+
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+sys.path.append(os.path.join(parent_dir, 'app'))
+
+# Now you can import filemanager
+from filemanager import *
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -15,15 +22,15 @@ if not TOKEN:
     raise ValueError("Discord token not found")
 
 messages = []
-user_list = list(pd.read_csv("query/users.csv")["user"])
+user_list = list(open_file("query/users.csv")["user"])
 DATA_FILE = "data/data.csv"
 DATA_FILE_COPY = "data/data-copy.csv"
 
 # Set your start date (only fetch messages after this date)
 if os.path.exists(DATA_FILE):
-    existing_data = pd.read_csv(DATA_FILE)
+    existing_data = open_file(DATA_FILE)
     # Convert the 'timestamp' column to datetime
-    existing_data['timestamp'] = pd.to_datetime(existing_data['timestamp'])
+    existing_data['timestamp'] = pd.to_datetime(existing_data['timestamp'], format='ISO8601')
     # Find the latest timestamp
     last_message_time = existing_data['timestamp'].max()
 else:
@@ -107,6 +114,6 @@ new_data = get_discord_data()
 
 # Append new data to the existing CSV
 if os.path.exists(DATA_FILE):
-    new_data.to_csv(DATA_FILE, mode='a', header=False, index=False, quoting=0)
+    append_to_encrypted_file(new_data, DATA_FILE)
 else:
-    new_data.to_csv(DATA_FILE, index=False, quoting=0)
+    save_file(new_data, DATA_FILE)
