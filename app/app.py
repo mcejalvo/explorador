@@ -45,12 +45,12 @@ col1, col2 = st.columns([5, 1])
 
 with col2:
     # Display the last updated timestamp
-    st.write(f"Última actualización: {pd.to_datetime(last_timestamp).strftime('%d/%m/%Y %H:%M')}")
+    st.write(f"Última actualización: {pd.to_datetime(last_timestamp, format='mixed').strftime('%d/%m/%Y %H:%M')}")
 
 
 # Convert to Europe/Madrid timezone, handling the timezone conversion
-df['formatted_date'] = df['timestamp'].str[:16]
-
+df['formatted_date'] = pd.to_datetime(df['timestamp'], format="mixed").dt.tz_convert('Europe/Madrid')
+df['formatted_date'] = df['formatted_date'].dt.strftime('%d/%m/%Y %H:%M')
 
 # Calculate default date range (last year)
 end_date_default = datetime.today()
@@ -107,7 +107,7 @@ with tab1:
 
     # Display filtered data
     st.subheader("Lista de mensajes")
-    columns_to_show = ["formatted_date", "timestamp", "name", "channel_name", "thread_name", "message", "message_link"]
+    columns_to_show = ["formatted_date", "name", "channel_name", "thread_name", "message", "message_link"]
     df_to_display = filtered_df.reset_index()[columns_to_show]
     st.dataframe(df_to_display)
 
