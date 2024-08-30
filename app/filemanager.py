@@ -1,48 +1,49 @@
-from cryptography.fernet import Fernet
-import pandas as pd
 import os
-import io
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
+from io import BytesIO
+import pandas as pd
 
-# Load the encryption key from an environment variable (GitHub secret)
-ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY")
+# Define Google API Scopes
+SCOPES = ['https://www.googleapis.com/auth/drive']
+DATA_FILE_ID = "1OkrKe5jT3fwq4B3Z_VMOm9WpHysjvAQ5"
+USERS_DATA_FILE_ID = "1zZQMcdUMkiBdHkmChXq8YD4hQFEglT8w"
 
-cipher = Fernet(ENCRYPTION_KEY)
+# Function to get Google Drive credentials
+def get_credentials():
+    creds_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+    if creds_path and os.path.exists(os.path.expanduser(creds_path)):
+        creds = service_account.Credentials.from_service_account_file(
+            os.path.expanduser(creds_path), scopes=SCOPES)
+    else:
+        raise Exception("Google Drive credentials not found.")
+    return creds
 
-def open_file(filepath):
-    # Read and decrypt the file
-    with open(filepath, 'rb') as file:
-        encrypted_data = file.read()
-    decrypted_data = cipher.decrypt(encrypted_data)
-    
-    # Load into a DataFrame using io.StringIO
-    df = pd.read_csv(io.StringIO(decrypted_data.decode()))
+# Function to connect to Google Drive API
+def connect_to_drive():
+    creds = get_credentials()
+    service = build('drive', 'v3', credentials=creds)
+    return service
+
+# Function to open a file from Google Drive and return it as a DataFrame
+def open_file(file_id=DATA_FILE_ID):
+    service = connect_to_drive()
+    request = service.files().get_media(fileId=file_id)
+    fh = BytesIO()
+    downloader = MediaIoBaseDownload(fh, request)
+    done = False
+    while not done:
+        status, done = downloader.next_chunk()
+    fh.seek(0)
+    df = pd.read_csv(fh)
     return df
 
-def save_file(df, save_path='data/data.csv'):
-    # Convert DataFrame to CSV
-    csv_data = df.to_csv(index=False)
-    
-    # Encrypt the data
-    encrypted_data = cipher.encrypt(csv_data.encode())
-    
-    # Save the encrypted data
-    with open(save_path, 'wb') as file:
-        file.write(encrypted_data)
-
-def append_to_encrypted_file(new_data, file_path='data/data.csv'):
-    if os.path.exists(file_path):
-        # If the file exists, open and decrypt the existing data
-        existing_df = open_file(file_path)
-        
-        # Append the new data to the existing data
-        updated_df = pd.concat([existing_df, new_data], ignore_index=True)
-    else:
-        # If the file doesn't exist, the new data is the updated data
-        updated_df = new_data
-    
-    # Encrypt and save the updated data
-    save_file(updated_df, file_path)
-
-# Example usage:
-# new_data = pd.DataFrame({'column1': [value1], 'column2': [value2]})
-# append_to_encrypted_file(new_data, 'path_to_encrypted_file.csv')
+# Function to save (overwrite) a DataFrame to Google Drive
+def save_file(df, file_id=DATA_FILE_ID):
+    service = connect_to_drive()
+    fh = BytesIO()
+    df.to_csv(fh, index=False)
+    fh.seek(0)
+    media = MediaIoBaseUpload(fh, mimetype='text/csv', resumable=True)
+    service.files().update(fileId=file_id, media_body=media).execute()
