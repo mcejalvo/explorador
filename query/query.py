@@ -102,6 +102,9 @@ def get_discord_data():
     new_data["date"] = pd.to_datetime(new_data["timestamp"]).dt.date
     new_data["hour"] = pd.to_datetime(new_data["timestamp"]).dt.hour
     
+    # Add 'has_spoilers' column based on 'image_url' containing 'SPOILER'
+    new_data['has_spoilers'] = new_data['image_url'].astype(str).str.contains('SPOILER', case=False, na=False).map({True: 'yes', False: 'no'})
+    
     return new_data.sort_values(by="timestamp", ascending=False)
 
 new_data = get_discord_data()
