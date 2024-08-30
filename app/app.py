@@ -45,7 +45,7 @@ with col2:
                 st.cache_data.clear()  # Clear the cache to reload data
                 df = load_data()  # Re-load the data after clearing the cache
                 save_file(df)  # Save the updated data back to Google Drive
-                last_timestamp = df['timestamp'].max()
+                last_timestamp = df['timestamp'].max().tz_convert('Europe/Madrid')
             except subprocess.CalledProcessError as e:
                 st.error(f"Error al actualizar los datos: {e}")
 
@@ -54,7 +54,7 @@ col1, col2 = st.columns([5, 1])
 
 with col2:
     # Display the last updated timestamp
-    st.write(f"Última actualización: {pd.to_datetime(last_timestamp, format='mixed').strftime('%d/%m/%Y %H:%M')}")
+    st.write(f"Última actualización: {last_timestamp.strftime('%d/%m/%Y %H:%M')}")
 
 # Calculate default date range
 end_date_default = datetime.today().date()
@@ -113,9 +113,12 @@ with tab1:
     if not spoilers_filter:
         df_display = df_display[~df_display['message'].str.contains(r"\|\|", na=False)]
 
+    # Sort the DataFrame by timestamp in descending order
+    df_display = df_display.sort_values(by='timestamp', ascending=False)
+
     # Display filtered data
     st.subheader("Lista de mensajes")
-    columns_to_show = ["formatted_date", "timestamp", "name", "channel_name", "thread_name", "message", "message_link"]
+    columns_to_show = ["formatted_date", "name", "channel_name", "thread_name", "message", "message_link"]
     df_to_display = df_display.reset_index()[columns_to_show]
     st.dataframe(df_to_display)
 
