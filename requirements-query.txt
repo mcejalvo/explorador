@@ -1,4 +1,0 @@
-discord
-asyncio
-pandas
-streamlit

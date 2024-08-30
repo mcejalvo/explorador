@@ -3,24 +3,26 @@ import pandas as pd
 import subprocess
 import os
 from datetime import datetime, timedelta
-from filemanager import open_file
+from filemanager import open_file, save_file
 
 # Set the app title from environment or use default
 app_title = os.getenv("TAB_TITLE", "Discord Search")
 st.set_page_config(layout="wide", page_title=app_title)
 
+# Function to load data with caching
+@st.cache_data
+def load_data():
+    df = open_file()
+    df['timestamp'] = pd.to_datetime(df['timestamp'], format="mixed", errors='coerce')
+    df['formatted_date'] = df['timestamp'].dt.tz_convert('Europe/Madrid').dt.strftime('%d/%m/%Y %H:%M')
+    df['date'] = df['timestamp'].dt.date
+    return df
+
 # Load CSV data
-df = open_file("data/data.csv")
-
-# Ensure the 'timestamp' column is in datetime format
-df['timestamp'] = pd.to_datetime(df['timestamp'], format="mixed", errors='coerce')
-df['formatted_date'] = df['timestamp'].dt.tz_convert('Europe/Madrid').dt.strftime('%d/%m/%Y %H:%M')
-
-# Create a new 'date' column containing only the date part (no time, no timezone)
-df['date'] = df['timestamp'].dt.date
+df = load_data()
 
 # Get the last timestamp from the data
-last_timestamp = df['timestamp'].max()
+last_timestamp = df['timestamp'].max().tz_convert('Europe/Madrid')
 
 # Display the title with custom HTML styling
 st.markdown(f"""
@@ -40,10 +42,9 @@ with col2:
                 result = subprocess.run(["python", "query/query.py"], check=True)
                 st.success("Datos actualizados correctamente.")
                 # Reload the data after updating
-                df = open_file("data/data.csv")
-                df['timestamp'] = pd.to_datetime(df['timestamp'], format="mixed", errors='coerce')
-                df['formatted_date'] = df['timestamp'].dt.tz_convert('Europe/Madrid').dt.strftime('%d/%m/%Y %H:%M')
-                df['date'] = df['timestamp'].dt.date  # Re-create the 'date' column
+                st.cache_data.clear()  # Clear the cache to reload data
+                df = load_data()  # Re-load the data after clearing the cache
+                save_file(df)  # Save the updated data back to Google Drive
                 last_timestamp = df['timestamp'].max()
             except subprocess.CalledProcessError as e:
                 st.error(f"Error al actualizar los datos: {e}")

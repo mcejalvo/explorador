@@ -4,14 +4,13 @@ import pandas as pd
 import threading
 import os
 from datetime import datetime, timezone
-import shutil
 import sys
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(os.path.join(parent_dir, 'app'))
 
 # Now you can import filemanager
-from filemanager import *
+from filemanager import open_file, save_file
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -22,22 +21,21 @@ if not TOKEN:
     raise ValueError("Discord token not found")
 
 messages = []
-user_list = list(open_file("query/users.csv")["user"])
-DATA_FILE = "data/data.csv"
-DATA_FILE_COPY = "data/data-copy.csv"
+DATA_FILE_ID = "1OkrKe5jT3fwq4B3Z_VMOm9WpHysjvAQ5"
+USERS_DATA_FILE_ID = "1zZQMcdUMkiBdHkmChXq8YD4hQFEglT8w"
+
+# Load the user list from Google Drive
+user_list = list(open_file(USERS_DATA_FILE_ID)["user"])
 
 # Set your start date (only fetch messages after this date)
-if os.path.exists(DATA_FILE):
-    existing_data = open_file(DATA_FILE)
-    # Convert the 'timestamp' column to datetime
+try:
+    existing_data = open_file(DATA_FILE_ID)
     existing_data['timestamp'] = pd.to_datetime(existing_data['timestamp'], format='ISO8601')
-    # Find the latest timestamp
     last_message_time = existing_data['timestamp'].max()
-else:
+except Exception:
     last_message_time = datetime(2021, 1, 1, tzinfo=timezone.utc)
 
 start_date = last_message_time
-# start_date = datetime(2024, 8, 20, tzinfo=timezone.utc) # to test
 
 class MyBot(discord.Client):
     def __init__(self, *args, **kwargs):
@@ -106,14 +104,13 @@ def get_discord_data():
     
     return new_data.sort_values(by="timestamp", ascending=False)
 
-# Backup the existing data.csv to data-copy.csv
-if os.path.exists(DATA_FILE):
-    shutil.copyfile(DATA_FILE, DATA_FILE_COPY)
-
 new_data = get_discord_data()
 
-# Append new data to the existing CSV
-if os.path.exists(DATA_FILE):
-    append_to_encrypted_file(new_data, DATA_FILE)
-else:
-    save_file(new_data, DATA_FILE)
+# Append new data to the existing DataFrame and save back to Google Drive
+try:
+    existing_data = open_file(DATA_FILE_ID)
+    updated_data = pd.concat([existing_data, new_data]).drop_duplicates().reset_index(drop=True)
+    save_file(updated_data, DATA_FILE_ID)
+except Exception as e:
+    print(f"Error appending new data: {str(e)}")
+    save_file(new_data, DATA_FILE_ID)
