@@ -118,7 +118,7 @@ with tab1:
 
     # Display filtered data
     st.subheader("Lista de mensajes")
-    columns_to_show = ["formatted_date", "name", "channel_name", "thread_name", "message", "message_link", "image_url", "has_spoilers"]
+    columns_to_show = ["formatted_date", "name", "channel_name", "thread_name", "message", "message_link", "image_url", "has_spoilers", "total_reactions"]
     df_to_display = df_display.reset_index()[columns_to_show]
     st.dataframe(df_to_display)
 
