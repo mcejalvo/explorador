@@ -67,6 +67,9 @@ with tab1:
     st.title("Explorador _:red[de] vergüenzas_ 👺 😳")
     st.write("_aka_ el shameador de Winnie 🐼")
 
+    # Spoilers toggle
+    spoilers_filter = st.checkbox("Mostrar spoilers")
+
     # First row: Date range, Personitas
     col1, col2 = st.columns(2)
 
@@ -104,10 +107,15 @@ with tab1:
     if message_filter:
         filtered_df = filtered_df[filtered_df['message'].str.contains(rf'\b{message_filter}\b', case=False, na=False)]
 
+    # Apply spoiler filter only for display purposes
+    df_display = filtered_df.copy()
+    if not spoilers_filter:
+        df_display = df_display[~df_display['message'].str.contains(r"\|\|", na=False)]
+
     # Display filtered data
     st.subheader("Lista de mensajes")
     columns_to_show = ["formatted_date", "timestamp", "name", "channel_name", "thread_name", "message", "message_link"]
-    df_to_display = filtered_df.reset_index()[columns_to_show]
+    df_to_display = df_display.reset_index()[columns_to_show]
     st.dataframe(df_to_display)
 
     # Group By Section
