@@ -27,15 +27,24 @@ USERS_DATA_FILE_ID = "1zZQMcdUMkiBdHkmChXq8YD4hQFEglT8w"
 # Load the user list from Google Drive
 user_list = list(open_file(USERS_DATA_FILE_ID)["user"])
 
-# Set your start date (only fetch messages after this date)
+# Try to load the existing data from Google Drive
 try:
     existing_data = open_file(DATA_FILE_ID)
-    existing_data['timestamp'] = pd.to_datetime(existing_data['timestamp'], format='ISO8601')
-    last_message_time = existing_data['timestamp'].max()
+    if existing_data.empty:
+        print("Existing data file is empty. Creating a new DataFrame.")
+        # Create an empty DataFrame with the desired structure if the file is empty
+        existing_data = pd.DataFrame(columns=["name", "message", "timestamp", "channel_name", "thread_name", "message_link", "has_image", "image_url", "total_reactions"])
+        start_date = None  # Query all messages if the data is empty
+    else:
+        existing_data['timestamp'] = pd.to_datetime(existing_data['timestamp'], format='ISO8601', errors='coerce')
+        # Filter out rows where 'timestamp' is NaT
+        existing_data = existing_data.dropna(subset=['timestamp'])
+        last_message_time = existing_data['timestamp'].max()
+        start_date = last_message_time
 except Exception:
-    last_message_time = datetime(2021, 1, 1, tzinfo=timezone.utc)
-
-start_date = last_message_time
+    print("Error loading existing data. Creating a new DataFrame.")
+    start_date = None  # Query all messages if there was an error loading the data
+    existing_data = pd.DataFrame(columns=["name", "message", "timestamp", "channel_name", "thread_name", "message_link", "has_image", "image_url", "total_reactions"])
 
 class MyBot(discord.Client):
     def __init__(self, *args, **kwargs):
@@ -64,8 +73,11 @@ class MyBot(discord.Client):
                                 has_image = "yes"
                                 image_url = ", ".join([attachment.url for attachment in message.attachments])
                             
+                            # Sum the total reactions for this message
+                            total_reactions = sum(reaction.count for reaction in message.reactions)
+                            
                             message_link = f"https://discord.com/channels/{guild.id}/{channel.id}/{message.id}"
-                            messages.append([message.author.name, message.content, message.created_at, channel.name, None, message_link, has_image, image_url])
+                            messages.append([message.author.name, message.content, message.created_at, channel.name, None, message_link, has_image, image_url, total_reactions])
                     
                     for thread in channel.threads:
                         print(f"Fetching messages from thread: {thread.name}")
@@ -76,9 +88,12 @@ class MyBot(discord.Client):
                                 if message.attachments:
                                     has_image = "yes"
                                     image_url = ", ".join([attachment.url for attachment in message.attachments])
-
+                                
+                                # Sum the total reactions for this message
+                                total_reactions = sum(reaction.count for reaction in message.reactions)
+                                
                                 message_link = f"https://discord.com/channels/{guild.id}/{thread.id}/{message.id}"
-                                messages.append([message.author.name, message.content, message.created_at, channel.name, thread.name, message_link, has_image, image_url])
+                                messages.append([message.author.name, message.content, message.created_at, channel.name, thread.name, message_link, has_image, image_url, total_reactions])
                 
                 except Exception as e:
                     print(f"Could not fetch messages from {channel.name}: {str(e)}")
@@ -98,7 +113,7 @@ def get_discord_data():
     thread.start()
     thread.join()  # Wait for the thread to finish
 
-    new_data = pd.DataFrame(messages, columns=["name", "message", "timestamp", "channel_name", "thread_name", "message_link", "has_image", "image_url"])
+    new_data = pd.DataFrame(messages, columns=["name", "message", "timestamp", "channel_name", "thread_name", "message_link", "has_image", "image_url", "total_reactions"])
     new_data["date"] = pd.to_datetime(new_data["timestamp"]).dt.date
     new_data["hour"] = pd.to_datetime(new_data["timestamp"]).dt.hour
     
@@ -110,10 +125,5 @@ def get_discord_data():
 new_data = get_discord_data()
 
 # Append new data to the existing DataFrame and save back to Google Drive
-try:
-    existing_data = open_file(DATA_FILE_ID)
-    updated_data = pd.concat([existing_data, new_data]).drop_duplicates().reset_index(drop=True)
-    save_file(updated_data, DATA_FILE_ID)
-except Exception as e:
-    print(f"Error appending new data: {str(e)}")
-    save_file(new_data, DATA_FILE_ID)
+updated_data = pd.concat([existing_data, new_data]).drop_duplicates().reset_index(drop=True)
+save_file(updated_data, DATA_FILE_ID)
