@@ -6,11 +6,11 @@ import os
 from datetime import datetime, timezone
 import sys
 import argparse
+import time
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 sys.path.append(os.path.join(parent_dir, 'app'))
 
-# Now you can import filemanager
 from filemanager import open_file, save_file
 
 # Argument parser setup
@@ -30,6 +30,7 @@ if not TOKEN:
 messages = []
 DATA_FILE_ID = "1OkrKe5jT3fwq4B3Z_VMOm9WpHysjvAQ5"
 USERS_DATA_FILE_ID = "1zZQMcdUMkiBdHkmChXq8YD4hQFEglT8w"
+LOG_FILE_ID = "1MigJVfJxzoOKpMrKURhmLL64stVRB_Rq"
 
 # Load the user list from Google Drive
 user_list = list(open_file(USERS_DATA_FILE_ID)["user"])
@@ -52,7 +53,6 @@ else:
             start_date = None  # Query all messages if the data is empty
         else:
             existing_data['timestamp'] = pd.to_datetime(existing_data['timestamp'], format='ISO8601', errors='coerce')
-            # Filter out rows where 'timestamp' is NaT
             existing_data = existing_data.dropna(subset=['timestamp'])
             last_message_time = existing_data['timestamp'].max()
             start_date = last_message_time
@@ -67,7 +67,7 @@ class MyBot(discord.Client):
     async def on_ready(self):
         print(f'Logged in as {self.user}')
         await self.extract_messages_from_all_guilds()
-        await self.close()  # Close the bot after fetching the messages
+        await self.close()
 
     async def extract_messages_from_all_guilds(self):
         print("Bot is ready and will now try to fetch messages from all channels and threads in all guilds.")
@@ -89,12 +89,8 @@ class MyBot(discord.Client):
                                 has_image = "yes"
                                 image_url = ", ".join([attachment.url for attachment in message.attachments])
                             
-                            # Sum the total reactions for this message
                             total_reactions = sum(reaction.count for reaction in message.reactions)
-                            
-                            # Find the maximum reaction count for this message
                             max_reaction_count = max((reaction.count for reaction in message.reactions), default=0)
-                            
                             message_link = f"https://discord.com/channels/{guild.id}/{channel.id}/{message.id}"
                             messages.append([message.author.name, message.content, message.created_at, channel.name, None, message_link, has_image, image_url, total_reactions, max_reaction_count])
                             
@@ -113,12 +109,8 @@ class MyBot(discord.Client):
                                     has_image = "yes"
                                     image_url = ", ".join([attachment.url for attachment in message.attachments])
                                 
-                                # Sum the total reactions for this message
                                 total_reactions = sum(reaction.count for reaction in message.reactions)
-                                
-                                # Find the maximum reaction count for this message
                                 max_reaction_count = max((reaction.count for reaction in message.reactions), default=0)
-                                
                                 message_link = f"https://discord.com/channels/{guild.id}/{thread.id}/{message.id}"
                                 messages.append([message.author.name, message.content, message.created_at, channel.name, thread.name, message_link, has_image, image_url, total_reactions, max_reaction_count])
                                 
@@ -143,26 +135,63 @@ def get_discord_data():
 
     thread = threading.Thread(target=start_bot)
     thread.start()
-    thread.join()  # Wait for the thread to finish
+    thread.join()
 
     new_data = pd.DataFrame(messages, columns=["name", "message", "timestamp", "channel_name", "thread_name", "message_link", "has_image", "image_url", "total_reactions", "max_reaction_count"])
     new_data["date"] = pd.to_datetime(new_data["timestamp"]).dt.date
     new_data["hour"] = pd.to_datetime(new_data["timestamp"]).dt.hour
-    
-    # Add 'has_spoilers' column based on 'image_url' containing 'SPOILER'
     new_data['has_spoilers'] = new_data['image_url'].astype(str).str.contains('SPOILER', case=False, na=False).map({True: 'yes', False: 'no'})
     
     return new_data.sort_values(by="timestamp", ascending=False)
 
-new_data = get_discord_data()
+def update_log_file(log_file_id, log_data):
+    try:
+        log_df = open_file(log_file_id)
+    except Exception as e:
+        print(f"Log file not found or error occurred: {str(e)}. Creating a new log file.")
+        log_df = pd.DataFrame(columns=["datetime", "rows_added", "total_rows", "time_spent", "success", "error_message", "limit", "reset"])
 
-# Handle potential empty DataFrames before concatenating
-if existing_data.empty:
-    updated_data = new_data
-elif new_data.empty:
-    updated_data = existing_data
-else:
-    updated_data = pd.concat([existing_data, new_data]).drop_duplicates().reset_index(drop=True)
+    log_df = pd.concat([log_df, pd.DataFrame([log_data])], ignore_index=True)
+    save_file(log_df, log_file_id)
 
-# Save back to Google Drive
-save_file(updated_data, DATA_FILE_ID)
+def main():
+    start_time = time.time()
+    try:
+        new_data = get_discord_data()
+        
+        if existing_data.empty:
+            updated_data = new_data
+        elif new_data.empty:
+            updated_data = existing_data
+        else:
+            updated_data = pd.concat([existing_data, new_data]).drop_duplicates().reset_index(drop=True)
+
+        save_file(updated_data, DATA_FILE_ID)
+        
+        success = True
+        error_message = ""
+    except Exception as e:
+        success = False
+        error_message = str(e)
+        print(f"Error during update: {error_message}")
+    
+    end_time = time.time()
+    time_spent = round(end_time - start_time, 2)
+    rows_added = len(new_data) if success else 0
+    total_rows = len(updated_data) if success else len(existing_data)
+    
+    log_entry = {
+        "datetime": datetime.now(timezone.utc).isoformat(),
+        "rows_added": rows_added,
+        "total_rows": total_rows,
+        "time_spent": time_spent,
+        "success": success,
+        "error_message": error_message,
+        "limit": args.limit if args.limit else None,
+        "reset": args.reset
+    }
+    
+    update_log_file(LOG_FILE_ID, log_entry)
+
+if __name__ == "__main__":
+    main()
