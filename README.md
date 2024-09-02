@@ -62,6 +62,19 @@ This bot’s on a mission to fetch all the messages from Discord that matter to 
 - Filters them down to the users you want to stalk—er, track 👀
 - Saves everything to Google Drive, no mess, no fuss 💾
 
+**New Parameters**:
+
+- `--limit`: Limit the number of messages to fetch (useful for testing). For example, `--limit 100` will fetch only 100 messages. If this parameter is not used, the script will fetch all available messages.
+  
+- `--reset`: Resets the data file before fetching new messages. **Warning**: This action deletes the existing data and can’t be undone. You’ll be prompted for confirmation when using this flag.
+
+**Example Usage**:
+```bash
+python3 query.py --reset --limit 100
+```
+
+This command resets the data file (after user confirmation) and fetches up to 100 messages.
+
 ### 💾 File Manager (`filemanager.py`)
 
 This is your file whisperer. It talks to Google Drive and makes sure your data’s where it needs to be.
