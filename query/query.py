@@ -38,12 +38,17 @@ user_list = list(open_file(USERS_DATA_FILE_ID)["user"])
 # Initialize `existing_data` to ensure it's always defined
 existing_data = pd.DataFrame(columns=["name", "message", "timestamp", "channel_name", "thread_name", "message_link", "has_image", "image_url", "total_reactions", "max_reaction_count"])
 
-# Handle the reset argument
+# Handle the reset argument with confirmation
 if args.reset:
-    print("Resetting the data file...")
-    # Create a new empty DataFrame with the header only
-    save_file(existing_data, DATA_FILE_ID)
-    start_date = None  # Query all messages since we reset the data
+    confirmation = input("Are you sure you want to reset the data file? This action cannot be undone. Type 'yes' to proceed: ")
+    if confirmation.lower() == 'yes':
+        print("Resetting the data file...")
+        # Create a new empty DataFrame with the header only
+        save_file(existing_data, DATA_FILE_ID)
+        start_date = None  # Query all messages since we reset the data
+    else:
+        print("Reset operation canceled. Exiting...")
+        sys.exit(0)
 else:
     # Try to load the existing data from Google Drive
     try:
@@ -176,7 +181,7 @@ def main():
         print(f"Error during update: {error_message}")
     
     end_time = time.time()
-    time_spent = round(end_time - start_time, 2)
+    time_spent = round((end_time - start_time) / 60, 2)  # Convert to minutes
     rows_added = len(new_data) if success else 0
     total_rows = len(updated_data) if success else len(existing_data)
     
@@ -184,7 +189,7 @@ def main():
         "datetime": datetime.now(timezone.utc).isoformat(),
         "rows_added": rows_added,
         "total_rows": total_rows,
-        "time_spent": time_spent,
+        "time_spent": time_spent,  # This is now in minutes
         "success": success,
         "error_message": error_message,
         "limit": args.limit if args.limit else None,
