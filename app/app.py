@@ -16,6 +16,7 @@ def load_data():
     df['timestamp'] = pd.to_datetime(df['timestamp'], format="mixed", errors='coerce')
     df['formatted_date'] = df['timestamp'].dt.tz_convert('Europe/Madrid').dt.strftime('%d/%m/%Y %H:%M')
     df['date'] = df['timestamp'].dt.date
+    df['year'] = df['timestamp'].dt.year  # Extract the year from the timestamp
     return df
 
 # Load CSV data
@@ -118,7 +119,7 @@ with tab1:
 
     # Display filtered data
     st.subheader("Lista de mensajes")
-    columns_to_show = ["formatted_date", "name", "channel_name", "thread_name", "message", "message_link", "image_url", "has_spoilers", "max_reaction_count","total_reactions"]
+    columns_to_show = ["formatted_date", "name", "channel_name", "thread_name", "message", "message_link", "image_url", "has_spoilers", "max_reaction_count", "total_reactions"]
     df_to_display = df_display.reset_index()[columns_to_show]
     st.dataframe(df_to_display)
 
@@ -129,7 +130,7 @@ with tab1:
     # Group By Filters
     group_by_columns = st.multiselect(
         "Agrupar por",
-        options=["name", "channel_name", "thread_name"],
+        options=["year", "max_reaction_count", "name", "channel_name", "thread_name"],
         key="group_by_columns"
     )
 
@@ -139,6 +140,45 @@ with tab1:
         st.dataframe(grouped_df)
     else:
         st.write("Please select at least one field to group by.")
+
+    # Hall of Fame Simulation Section
+    with st.expander("Hall of Fame Simulation"):
+        st.subheader("Simulación del Hall of Fame")
+        
+        # Filters for the simulation
+        col5, col6 = st.columns(2)
+        
+        with col5:
+            years_selected = st.multiselect("Años", options=df['year'].unique(), key="hof_years_filter")
+        
+        with col6:
+            threshold = st.slider("Threshold", min_value=1, max_value=int(df['max_reaction_count'].max()), value=10, key="hof_threshold_filter")
+        
+        # Filter data for the Hall of Fame
+        hof_df = df.copy()  # Use the original DataFrame, not filtered_df
+
+        if years_selected:
+            hof_df = hof_df[hof_df['year'].isin(years_selected)]
+        
+        hof_df = hof_df[hof_df['max_reaction_count'] >= threshold]
+        
+        # Calculate the total number of messages
+        total_messages = len(hof_df)
+        
+        # Display the total number of messages
+        st.write(f"Total amount of messages: {total_messages}")
+        
+        # Sort by max_reaction_count in descending order to create a leaderboard
+        hof_df = hof_df.sort_values(by='max_reaction_count', ascending=False)
+        
+        # Add a Rank column
+        hof_df['Rank'] = range(1, len(hof_df) + 1)
+        
+        # Select only the relevant columns for display
+        hof_df = hof_df[['Rank', 'name', 'message', 'max_reaction_count', "message_link"]]
+        
+        st.subheader("Leaderboard")
+        st.dataframe(hof_df)
 
 # Image Gallery Page
 with tab2:
