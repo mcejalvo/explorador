@@ -28,7 +28,7 @@ if not TOKEN:
     raise ValueError("Discord token not found")
 
 messages = []
-DATA_FILE_ID = "1OkrKe5jT3fwq4B3Z_VMOm9WpHysjvAQ5"
+DATA_FILE_ID = "11XAt4ezwKcflgqTCCmSDPTDtR29kNGkK"
 USERS_DATA_FILE_ID = "1zZQMcdUMkiBdHkmChXq8YD4hQFEglT8w"
 LOG_FILE_ID = "1MigJVfJxzoOKpMrKURhmLL64stVRB_Rq"
 
