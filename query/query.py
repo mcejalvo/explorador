@@ -29,7 +29,7 @@ if not TOKEN:
 
 messages = []
 DATA_FILE_ID = "11XAt4ezwKcflgqTCCmSDPTDtR29kNGkK"
-USERS_DATA_FILE_ID = "1zZQMcdUMkiBdHkmChXq8YD4hQFEglT8w"
+USERS_DATA_FILE_ID = "19OjYlty7hUB30A_5NF-DcOcwIszQIqkj"
 LOG_FILE_ID = "1MigJVfJxzoOKpMrKURhmLL64stVRB_Rq"
 
 # Load the user list from Google Drive
@@ -84,7 +84,7 @@ class MyBot(discord.Client):
             
             for channel in guild.text_channels:
                 print(f"Fetching messages from channel: {channel.name}")
-                
+
                 try:
                     async for message in channel.history(limit=None, after=start_date):
                         if message.author.name in user_list:
@@ -98,7 +98,7 @@ class MyBot(discord.Client):
                             max_reaction_count = max((reaction.count for reaction in message.reactions), default=0)
                             message_link = f"https://discord.com/channels/{guild.id}/{channel.id}/{message.id}"
                             messages.append([message.author.name, message.content, message.created_at, channel.name, None, message_link, has_image, image_url, total_reactions, max_reaction_count])
-                            
+
                             total_messages_fetched += 1
                             if args.limit and total_messages_fetched >= args.limit:
                                 print(f"Reached total message limit of {args.limit}. Stopping...")

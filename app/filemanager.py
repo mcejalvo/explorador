@@ -8,7 +8,6 @@ import pandas as pd
 # Define Google API Scopes
 SCOPES = ['https://www.googleapis.com/auth/drive']
 DATA_FILE_ID = "11XAt4ezwKcflgqTCCmSDPTDtR29kNGkK"
-USERS_DATA_FILE_ID = "1zZQMcdUMkiBdHkmChXq8YD4hQFEglT8w"
 
 # Function to get Google Drive credentials
 def get_credentials():
